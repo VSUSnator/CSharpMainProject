@@ -14,27 +14,19 @@ namespace UnitBrains.Player
         private bool _overheated;
         private int _shotCount = 0;
 
-        protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)  
+        protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
         {
-            float overheatTemperature = OverheatTemperature;  //изм.  
-            var projectile = CreateProjectile(forTarget); //раб.
+            float overheatTemperature = OverheatTemperature;
 
-            AddProjectileToList(projectile, intoList);
-            if (_shotCount == 0)
+            int temp = GetTemperature();
+            if (temp >= overheatTemperature) { return; }
+            IncreaseTemperature();
+            for (int i = 0; i <= temp; i++)
             {
-                 projectile = CreateProjectile(forTarget);
-                AddProjectileToList(projectile, intoList);
-            }
-            else
-            {
-                for (int i = 1; i <= _shotCount + 1; i++)
-                {
-                     projectile = CreateProjectile(forTarget);
-                    AddProjectileToList(projectile, intoList);
-                }
-            }
+                var projectile = CreateProjectile(forTarget);
+                AddProjectileToList(projectile, intoList);//Переделал код под фидбек в надежде, что это спасет от багов которые могу я создать.
 
-            _shotCount = (_shotCount + 1) % 3; // Увеличиваем счетчик выстрелов и обнуляем при достижении значения 3
+            }
 
         }
 
@@ -53,6 +45,24 @@ namespace UnitBrains.Player
             {
                 result.RemoveAt(result.Count - 1);
             }
+            Vector2Int? closestTarget = null;//*
+            float minDistance = float.MaxValue;
+            
+            foreach (Vector2Int target in result)
+            {
+                float distance = DistanceToOwnBase(target);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestTarget = target;
+                }
+            }
+
+            if (closestTarget != null)
+            {
+                result.Clear();
+                result.Add(closestTarget.Value); // Использую .Value для получения значения из Nullable
+            }//*
             return result;
             ///////////////////////////////////////
         }
