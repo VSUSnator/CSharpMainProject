@@ -75,13 +75,13 @@ public override void Update(float deltaTime, float time)
     }
 }
 
-protected int GetTemperature()
+protected int GetTemperature()//error CS0106: The modifier 'protected' is not valid for this item
 {
     if (_overheated) return (int)OverheatTemperature;
     else return (int)_temperature;
 }
 
-protected void IncreaseTemperature()
+protected void IncreaseTemperature()//error CS0106: The modifier 'protected' is not valid for this item
 {
     _temperature += 1f;
     if (_temperature >= OverheatTemperature) _overheated = true;
