@@ -19,10 +19,6 @@ namespace UnitBrains.Player
         private List<Vector2Int> unreachableTargets = new List<Vector2Int>();
         private float attackRange = 5f;
 
-        protected float GetDistanceToTarget(Vector2Int targetPosition)
-        {
-            return Vector2Int.Distance(Pos, targetPosition); // Расчет расстояния
-        }
 
         protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
         {
@@ -42,32 +38,31 @@ namespace UnitBrains.Player
 
         public override Vector2Int GetNextStep()
         {
-            Vector2Int position = Vector2Int.zero;
-            Vector2Int nextPoition = Vector2Int.right;
-            position = position;//.CalcNextStepTowards(nextPoition);
-            return base.GetNextStep();
-            Vector2Int currentPosition = Unit.Pos; // Предполагаем, что у вас есть ссылка на экземпляр Unit
+            // Начальная позиция юнита
+            Vector2Int position = Vector2Int.zero; 
 
-            List<Vector2Int> targets = GetAllTargets().ToList();
+            // Предположим, что у вас есть список целей
+            List<Vector2Int> targets = new List<Vector2Int>(); 
 
-            if (targets.Count > 0)
+            // Проверяем, есть ли цели
+            if (targets.Count == 0)
             {
-                Vector2Int target = targets[0];
-
-                if (GetDistanceToTarget(target) > attackRange)
-                {
-                    // Рассчитываем следующую позицию к цели
-                    Vector2Int nextPosition = currentPosition.CalcNextStepTowards(target);
-                    return nextPosition; // Возвращаем следующую позицию
-                }
+                return position; // Нет целей, возвращаем позицию юнита
             }
 
-            return currentPosition; // Возвращаем текущую позицию, если ничего не изменилось
-        }
+            // Получаем позицию первой цели
+            Vector2Int targetPosition = targets[0]; // Предполагается, что цель - это Vector2Int
 
-        protected override float GetDistanceToTarget(Vector2Int targetPosition)
-        {
-            return Vector2Int.Distance(Unit.Pos, targetPosition); // Рассчитываем расстояние до цели
+            // Проверяем, находится ли цель в области атаки
+            if (Vector2Int.Distance(position, targetPosition) <= attackRange) 
+            {
+                return position; // Цель в области атаки, возвращаем позицию юнита
+            }
+            else
+            {
+                // Двигаемся к цели
+                return CalcNextStepTowards(targetPosition); 
+            }
         }
 
         protected override List<Vector2Int> SelectTargets()
@@ -96,6 +91,7 @@ namespace UnitBrains.Player
                     }
                 }
 
+
                 if (closestTarget != null)
                 {
                     if (reachableTargets.Contains(closestTarget.Value))
@@ -108,12 +104,18 @@ namespace UnitBrains.Player
                     }
                 }
             }
+
             // Если целей нет, добавляем базу противника в список целей
             if (result.Count == 0)
+
             {
-               // int enemyBaseId = runtimeModel.BotPlayerId; // Получаем ID противника
-               // Vector2Int enemyBase = runtimeModel.RoMap.Bases[enemyBaseId]; // Получаем базу противника
-               // result.Add(enemyBase); // Добавляем базу в список целей
+                int enemyBaseId = runtimeModel.BotPlayerId; // Получаем ID противника//error CS1061: 'IReadOnlyRuntimeModel'
+
+                if (runtimeModel.RoMap.Bases.ContainsKey(enemyBaseId))//error CS1061: 'IReadOnlyRuntimeModel'
+                {
+                    Vector2Int enemyBase = runtimeModel.RoMap.Bases[enemyBaseId]; // Получаем базу противника
+                    result.Add(enemyBase); // Добавляем базу в список целей
+                }
             }
             return result;
             ///////////////////////////////////////
@@ -144,6 +146,30 @@ namespace UnitBrains.Player
         {
             _temperature += 1f;
             if (_temperature >= OverheatTemperature) _overheated = true;
+        }
+
+        public Vector2Int CalcNextStepTowards(Vector2Int target)
+        {
+            // Например, просто двигаемся на один шаг в сторону цели
+            Vector2Int currentPosition = Vector2Int.zero; // Здесь используйте реальную позицию юнита
+            Vector2Int direction = target - currentPosition;
+
+            if (direction.sqrMagnitude > 1)
+            {
+                // Нормализуем вектор вручную
+                // Получаем длину вектора
+                float distance = direction.magnitude;
+
+                // Нормализуем направление
+                float normalizedX = direction.x / distance;
+                float normalizedY = direction.y / distance;
+
+                // Создаем новый Vector2Int на основе нормализованного направления
+                return currentPosition + new Vector2Int(Mathf.RoundToInt(normalizedX), Mathf.RoundToInt(normalizedY));
+            }
+
+            // Если расстояние меньше 1, просто возвращаем текущее положение + направление
+            return currentPosition + direction;
         }
     }
 }
