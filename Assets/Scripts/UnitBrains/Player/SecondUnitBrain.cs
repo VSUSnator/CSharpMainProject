@@ -1,68 +1,56 @@
 ﻿﻿using System.Collections.Generic;
 using System.Linq;
+using Model;
 using Model.Runtime.Projectiles;
 using UnityEngine;
+using Utilities;
 
 namespace UnitBrains.Player
 {
     public class SecondUnitBrain : DefaultPlayerUnitBrain
     {
+        public SecondUnitBrain()
+        {
+            Id = IdBilling++;
+        }
+        public static int IdBilling = 0;
+        public int Id;
+
         public override string TargetUnitName => "Cobra Commando";
+
         private const float OverheatTemperature = 3f;
         private const float OverheatCooldown = 2f;
+        private const int MaxTarget = 3;
+
         private float _temperature = 0f;
         private float _cooldownTime = 0f;
         private bool _overheated;
-        private int _shotCount = 0;
 
-        // Новое поле для хранения целей вне зоны досягаемости
-        private List<Vector2Int> unreachableTargets = new List<Vector2Int>();
-        private float attackRange = 5f;
+        private Vector2Int _notRangeEnemyPosition;
+        private List<Vector2Int> allTargetEnemies = new List<Vector2Int>();
 
 
         protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
         {
-            float overheatTemperature = OverheatTemperature;
-            int temp = GetTemperature();
-            if (temp >= overheatTemperature)
+            //float overheatTemperature = OverheatTemperature;
+            ///////////////////////////////////////
+            // Homework 1.3 (1st block, 3rd module)
+            ///////////////////////////////////////           
+            if (!_overheated)
             {
-                return;
+                for (float i = 0; i <= GetTemperature(); i++)
+                {
+                    var projectile = CreateProjectile(forTarget);
+                    AddProjectileToList(projectile, intoList);
+                }
+                IncreaseTemperature();
             }
-            IncreaseTemperature();
-            for (int i = 0; i <= temp; i++)
-            {
-                var projectile = CreateProjectile(forTarget);
-                AddProjectileToList(projectile, intoList);
-            }
+            ///////////////////////////////////////   
         }
 
         public override Vector2Int GetNextStep()
         {
-            // Начальная позиция юнита
-            Vector2Int position = Vector2Int.zero; 
-
-            // Предположим, что у вас есть список целей
-            List<Vector2Int> targets = new List<Vector2Int>(); 
-
-            // Проверяем, есть ли цели
-            if (targets.Count == 0)
-            {
-                return position; // Нет целей, возвращаем позицию юнита
-            }
-
-            // Получаем позицию первой цели
-            Vector2Int targetPosition = targets[0]; // Предполагается, что цель - это Vector2Int
-
-            // Проверяем, находится ли цель в области атаки
-            if (Vector2Int.Distance(position, targetPosition) <= attackRange) 
-            {
-                return position; // Цель в области атаки, возвращаем позицию юнита
-            }
-            else
-            {
-                // Двигаемся к цели
-                return CalcNextStepTowards(targetPosition); 
-            }
+            return unit.Pos.CalcNextStepTowards(_notRangeEnemyPosition);
         }
 
         protected override List<Vector2Int> SelectTargets()
@@ -70,55 +58,55 @@ namespace UnitBrains.Player
             ///////////////////////////////////////
             // Homework 1.4 (1st block, 4rd module)
             ///////////////////////////////////////
-            List<Vector2Int> allTargets = GetAllTargets().ToList(); // Получаем в List
-            List<Vector2Int> reachableTargets = GetReachableTargets();
-            List<Vector2Int> result = new List<Vector2Int>();
+
+            allTargetEnemies.Clear();
+            allTargetEnemies = GetAllTargets().ToList();
+
+            Vector2Int targetBaseEnemy = runtimeModel.RoMap.Bases[RuntimeModel.BotPlayerId];
+
+            allTargetEnemies.Remove(targetBaseEnemy);
 
 
             // Если нужно оставить только одну цель
-            if (allTargets.Count > 0)
+            if (allTargetEnemies.Count > 0)
             {
-                Vector2Int? closestTarget = null;
-                float minDistance = float.MaxValue;
+                SortByDistanceToOwnBase(allTargetEnemies);
 
-                foreach (Vector2Int target in allTargets)
+                if (allTargetEnemies.Count > MaxTarget)
                 {
-                    float distance = DistanceToOwnBase(target);
-                    if (distance < minDistance)
-                    {
-                        minDistance = distance;
-                        closestTarget = target;
-                    }
+                    allTargetEnemies = allTargetEnemies.GetRange(0, MaxTarget);
                 }
 
+                int idEnemy = (Id - 1) % allTargetEnemies.Count;
 
-                if (closestTarget != null)
+                Vector2Int target = allTargetEnemies[idEnemy];
+
+                allTargetEnemies.Clear();
+
+                if (!HasTargetsInRange())
                 {
-                    if (reachableTargets.Contains(closestTarget.Value))
-                    {
-                        result.Add(closestTarget.Value); // Цель в зоне досягаемости
-                    }
-                    else
-                    {
-                        unreachableTargets.Add(closestTarget.Value); // Цель вне зоны досягаемости
-                    }
+                    _notRangeEnemyPosition = target;
+                }
+                else
+                {
+                    allTargetEnemies.Add(target);
                 }
             }
-
-            // Если целей нет, добавляем базу противника в список целей
-            if (result.Count == 0)
-
+            else
             {
-                int enemyBaseId = runtimeModel.BotPlayerId; // Получаем ID противника//error CS1061: 'IReadOnlyRuntimeModel'
+                allTargetEnemies.Clear();
 
-                if (runtimeModel.RoMap.Bases.ContainsKey(enemyBaseId))//error CS1061: 'IReadOnlyRuntimeModel'
+                if (!HasTargetsInRange())
                 {
-                    Vector2Int enemyBase = runtimeModel.RoMap.Bases[enemyBaseId]; // Получаем базу противника
-                    result.Add(enemyBase); // Добавляем базу в список целей
+                    _notRangeEnemyPosition = targetBaseEnemy;
+                }
+                else
+                {
+
+                    allTargetEnemies.Add(targetBaseEnemy);
                 }
             }
-            return result;
-            ///////////////////////////////////////
+            return allTargetEnemies;
         }
 
         public override void Update(float deltaTime, float time)
@@ -128,6 +116,7 @@ namespace UnitBrains.Player
                 _cooldownTime += Time.deltaTime;
                 float t = _cooldownTime / (OverheatCooldown/10);
                 _temperature = Mathf.Lerp(OverheatTemperature, 0, t);
+
                 if (t >= 1)
                 {
                     _cooldownTime = 0;
@@ -138,7 +127,7 @@ namespace UnitBrains.Player
 
         private int GetTemperature()
         {
-            if(_overheated) return (int) OverheatTemperature;
+            if (_overheated) return (int)OverheatTemperature;
             else return (int)_temperature;
         }
 
