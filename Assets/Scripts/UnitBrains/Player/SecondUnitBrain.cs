@@ -20,7 +20,6 @@ namespace UnitBrains.Player
 
         private const float OverheatTemperature = 3f;
         private const float OverheatCooldown = 2f;
-        private const int MaxTarget = 3;
 
         private float _temperature = 0f;
         private float _cooldownTime = 0f;
@@ -70,15 +69,7 @@ namespace UnitBrains.Player
             // Если нужно оставить только одну цель
             if (allTargetEnemies.Count > 0)
             {
-                SortByDistanceToOwnBase(allTargetEnemies);
-
-                if (allTargetEnemies.Count > MaxTarget)
-                {
-                    allTargetEnemies = allTargetEnemies.GetRange(0, MaxTarget);
-                }
-
                 int idEnemy = (Id - 1) % allTargetEnemies.Count;
-
                 Vector2Int target = allTargetEnemies[idEnemy];
 
                 allTargetEnemies.Clear();
