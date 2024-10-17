@@ -13,6 +13,7 @@ namespace UnitBrains.Player
         {
             Id = IdBilling++;
         }
+
         public static int IdBilling = 0;
         public int Id;
 
@@ -27,7 +28,6 @@ namespace UnitBrains.Player
 
         private Vector2Int _notRangeEnemyPosition;
         private List<Vector2Int> allTargetEnemies = new List<Vector2Int>();
-
 
         protected override void GenerateProjectiles(Vector2Int forTarget, List<BaseProjectile> intoList)
         {
@@ -49,6 +49,7 @@ namespace UnitBrains.Player
 
         public override Vector2Int GetNextStep()
         {
+            // Возвращаем следующий шаг к цели
             return unit.Pos.CalcNextStepTowards(_notRangeEnemyPosition);
         }
 
@@ -62,9 +63,7 @@ namespace UnitBrains.Player
             allTargetEnemies = GetAllTargets().ToList();
 
             Vector2Int targetBaseEnemy = runtimeModel.RoMap.Bases[RuntimeModel.BotPlayerId];
-
             allTargetEnemies.Remove(targetBaseEnemy);
-
 
             // Если нужно оставить только одну цель
             if (allTargetEnemies.Count > 0)
@@ -118,38 +117,40 @@ namespace UnitBrains.Player
 
         private int GetTemperature()
         {
-            if (_overheated) return (int)OverheatTemperature;
-            else return (int)_temperature;
+            return _overheated ? (int)OverheatTemperature : (int)_temperature;
         }
 
         private void IncreaseTemperature()
         {
             _temperature += 1f;
-            if (_temperature >= OverheatTemperature) _overheated = true;
+            if (_temperature >= OverheatTemperature)
+            {
+                _overheated = true;
+            }
         }
 
         public Vector2Int CalcNextStepTowards(Vector2Int target)
         {
-            // Например, просто двигаемся на один шаг в сторону цели
-            Vector2Int currentPosition = Vector2Int.zero; // Здесь используйте реальную позицию юнита
+            Vector2Int currentPosition = unit.Pos; // Используйте реальную позицию юнита
             Vector2Int direction = target - currentPosition;
 
             if (direction.sqrMagnitude > 1)
             {
-                // Нормализуем вектор вручную
-                // Получаем длину вектора
-                float distance = direction.magnitude;
-
-                // Нормализуем направление
-                float normalizedX = direction.x / distance;
-                float normalizedY = direction.y / distance;
-
-                // Создаем новый Vector2Int на основе нормализованного направления
-                return currentPosition + new Vector2Int(Mathf.RoundToInt(normalizedX), Mathf.RoundToInt(normalizedY));
+                // Нормализуем вектор
+                return NormalizeDirection(currentPosition, direction);
             }
 
             // Если расстояние меньше 1, просто возвращаем текущее положение + направление
             return currentPosition + direction;
+        }
+
+        private Vector2Int NormalizeDirection(Vector2Int currentPosition, Vector2Int direction)
+        {
+            float distance = direction.magnitude;
+            float normalizedX = direction.x / distance;
+            float normalizedY = direction.y / distance;
+
+            return currentPosition + new Vector2Int(Mathf.RoundToInt(normalizedX), Mathf.RoundToInt(normalizedY));
         }
     }
 }
