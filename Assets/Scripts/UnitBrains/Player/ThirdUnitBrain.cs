@@ -17,10 +17,14 @@ namespace UnitBrains.Player
         private const float OverheatTemperature = 3f;
         private const float OverheatCooldown = 2f;
         private const int MaxTarget = 3;
+        private const float TransitionTime = 1f; // Время перехода между действиями
 
         private float _temperature = 0f;
         private float _cooldownTime = 0f;
         private bool _overheated;
+        private bool _isTransitioning = false; // Флаг перехода
+        private bool _isMoving = false; // Текущее состояние (движение или атака)
+
 
         private Vector2Int _notRangeEnemyPosition;
         private List<Vector2Int> allTargetEnemies = new List<Vector2Int>();
@@ -86,7 +90,18 @@ namespace UnitBrains.Player
 
         public override void Update(float deltaTime, float time)
         {
-            _stateTimer += deltaTime;
+            _cooldownTime += deltaTime;
+
+            if (_isTransitioning)
+            {
+                if (_cooldownTime >= TransitionTime)
+                {
+                    _isTransitioning = false;
+                    _cooldownTime = 0f; // Сброс таймера
+                    _isMoving = !_isMoving; // Переключение состояния
+                }
+                return; // Во время перехода ничего не делаем
+            }
 
             if (_overheated)
             {
@@ -99,33 +114,66 @@ namespace UnitBrains.Player
                     _cooldownTime = 0;
                     _overheated = false;
                 }
-                if (!CanShoot()) // Если не можем стрелять, движемся
+            }
+
+            if (_isMoving)
+            {
+                if (CanAttack())
+                {
+                    StartTransition(); // Начать переход в атаку
+                }
+                else
                 {
                     Move();
                 }
-                else // Если можем стрелять
-                {
-                    Shoot();
-                    IncreaseTemperature(); // Увеличиваем температуру после стрельбы
-                }
             }
-
-            void Move()
+            else
             {
-                Vector2Int nextStep = GetNextStep();
-                // Логика для движения к цели
-            }
-
-            void Shoot()
-            {
-                GenerateProjectiles(_notRangeEnemyPosition, new List<BaseProjectile>());
-            }
-
-            bool CanShoot()
-            {
-                return !(_overheated || !HasTargetsInRange());
+                Attack(); // Выполняем атаку
             }
         }
+
+        private void StartTransition()
+        {
+            _isTransitioning = true;
+            _cooldownTime = 0f; // Сброс таймера
+        }
+
+        void Move()
+        
+        {
+            Vector2Int nextStep = GetNextStep();
+            // Логика для движения к цели
+        }
+
+        private void Attack()
+        {
+            var projectiles = GetProjectiles();
+            if (projectiles != null && projectiles.Count > 0)
+            {
+                unit.ClearPendingProjectiles(); 
+
+                
+                List<BaseProjectile> newProjectiles = new List<BaseProjectile>(projectiles);
+
+                
+                foreach (var projectile in newProjectiles)
+                {
+                    // Добавляем по одному
+                    ((List<BaseProjectile>)unit.PendingProjectiles).Add(projectile);
+                }
+
+                IncreaseTemperature(); // Увеличиваем температуру после стрельбы
+                StartTransition(); // Начать переход в движение
+            }
+        }
+
+
+        private bool CanAttack()
+        {
+                return !(_overheated || !HasTargetsInRange());
+        }
+
         
 
         private int GetTemperature()
