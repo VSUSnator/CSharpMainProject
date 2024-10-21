@@ -22,7 +22,7 @@ namespace UnitBrains.Player
         private float _temperature = 0f;
         private float _cooldownTime = 0f;
         private bool _overheated;
-        private bool _isTransitioning = false; // Флаг перехода
+        private bool _isTransitioning = false; // Флаг перехода.
         private bool _isMoving = false; // Текущее состояние (движение или атака)
 
 
