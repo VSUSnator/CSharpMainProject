@@ -9,12 +9,12 @@ namespace UnitBrains.Pathfinding
 {
     public class Node
     {
-        public int X;
-        public int Y;
-        public int Cost = 10; // Стоимость перемещения
-        public int Estimate;
-        public int Value;
-        public Node Parent;
+        public int X { get; }
+        public int Y { get; }
+        public int Cost { get; private set; } = 10; // Стоимость перемещения
+        public int Estimate { get; private set; }
+        public int Value => Cost + Estimate; // Общая стоимость
+        public Node? Parent { get; set; } // Родительский узел
 
         public Node(int x, int y)
         {
@@ -27,9 +27,9 @@ namespace UnitBrains.Pathfinding
             Estimate = Math.Abs(X - targetX) + Math.Abs(Y - targetY);
         }
 
-        public void CalculateValue()
+        public void SetCost(int newCost)
         {
-            Value = Cost + Estimate;
+            Cost = newCost;
         }
 
         public override bool Equals(object? obj)
@@ -39,46 +39,7 @@ namespace UnitBrains.Pathfinding
 
             return X == node.X && Y == node.Y;
         }
+        public override int GetHashCode() => (X, Y).GetHashCode();
 
-        public override int GetHashCode() => (X, Y).GetHashCode(); // Уникальный хэш-код для узла
-        
-        public List<Node> GetNeighbours(IReadOnlyRuntimeModel runtimeModel)
-        {
-            var neighbours = new List<Node>();
-            var directions = new Vector2Int[]
-            {
-                new Vector2Int(1, 0),  // Вправо
-                new Vector2Int(-1, 0), // Влево
-                new Vector2Int(0, 1),  // Вверх
-                new Vector2Int(0, -1)  // Вниз
-            };
-
-            foreach (var dir in directions)
-            {
-                int newX = X + dir.x;
-                int newY = Y + dir.y;
-
-                // Проверка на проходимость
-                if (runtimeModel.IsTileWalkable(new Vector2Int(newX, newY)))
-                {
-                    neighbours.Add(new Node(newX, newY) { Parent = this }); // Устанавливаем родителя
-                }
-            }
-
-            return neighbours;
-        }
-
-        public static List<Node> ReconstructPath(Node currentNode)
-        {
-            List<Node> path = new List<Node>();
-
-            while (currentNode != null)
-            {
-                path.Add(currentNode);
-                currentNode = currentNode.Parent;
-            }
-            path.Reverse();
-            return path; // Возвращаем путь в правильном порядке
-        }
     }
 }
