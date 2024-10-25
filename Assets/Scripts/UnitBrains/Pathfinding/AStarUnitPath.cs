@@ -1,4 +1,4 @@
-using Model;
+п»їusing Model;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,31 +26,31 @@ namespace UnitBrains.Pathfinding
         {
             var currentPoint = startPoint;
             var result = new List<Vector2Int> { startPoint };
-            var visited = new HashSet<Vector2Int> { startPoint }; // Для отслеживания посещённых точек
+            var visited = new HashSet<Vector2Int> { startPoint }; 
             var counter = 0;
 
             while (currentPoint != endPoint && counter++ < MaxLength)
             {
-                var currentNode = new Node(currentPoint.x, currentPoint.y);
+                var currentNode = new Nodes(currentPoint.x, currentPoint.y);
                 currentNode.CalculateEstimate(endPoint.x, endPoint.y);
                 currentNode.SetCost(10);
 
-                // Ищем следующий шаг
+                
                 var nextPoint = CalcNextStepTowards(currentPoint, endPoint);
 
-                // Проверяем, если шаг уже посещён или не проходим
+                
                 if (!visited.Contains(nextPoint) && runtimeModel.IsTileWalkable(nextPoint))
                 {
                     result.Add(nextPoint);
-                    visited.Add(nextPoint); // Добавляем в посещённые
-                    currentPoint = nextPoint; // Обновляем текущую точку
+                    visited.Add(nextPoint); 
+                    currentPoint = nextPoint;
                 }
                 else
                 {
-                    // Если прямая линия не проходима, пробуем другие варианты
+                   
                     if (!TryStep(currentPoint, visited, result))
                     {
-                        // Если нет доступных шагов, выходим из цикла
+                       
                         Debug.LogWarning($"No available steps from {currentPoint}. Stopping calculation.");
                         break;
                     }
@@ -62,10 +62,10 @@ namespace UnitBrains.Pathfinding
         }
 
         private static readonly Vector2Int[] possibleSteps = {
-             new Vector2Int(1, 0), // Перемещение вправо
-             new Vector2Int(-1, 0), // Перемещение влево
-             new Vector2Int(0, 1), // Перемещение вверх
-             new Vector2Int(0, -1) // Перемещение вниз
+             new Vector2Int(1, 0), 
+             new Vector2Int(-1, 0),
+             new Vector2Int(0, 1), 
+             new Vector2Int(0, -1) 
         };
 
         private bool TryStep(Vector2Int currentPoint, HashSet<Vector2Int> visited, List<Vector2Int> result)
@@ -76,12 +76,12 @@ namespace UnitBrains.Pathfinding
                 if (!visited.Contains(newStep) && runtimeModel.IsTileWalkable(newStep))
                 {
                     result.Add(newStep);
-                    visited.Add(newStep); // Добавляем в посещённые
-                    return true; // Успех
+                    visited.Add(newStep); 
+                    return true; 
                 }
             }
 
-            return false; // Если ни один шаг не сработал
+            return false; 
         }
 
         private bool IsValid(Vector2Int cell)
@@ -94,10 +94,10 @@ namespace UnitBrains.Pathfinding
 
         private Vector2Int CalcNextStepTowards(Vector2Int current, Vector2Int target)
         {
-            // Определяем следующий шаг, основываясь на целевой точке
-            Vector2Int nextStep = current; // Начнем с текущей позиции
+            
+            Vector2Int nextStep = current;
 
-            // Пробуем переместиться по всем направлениям
+           
             for (int i = 0; i < dx.Length; i++)
             {
                 int newX = current.x + dx[i];
@@ -105,15 +105,15 @@ namespace UnitBrains.Pathfinding
 
                 Vector2Int potentialStep = new Vector2Int(newX, newY);
 
-                // Проверяем, что следующая позиция проходима
+               
                 if (IsValid(potentialStep))
                 {
-                    nextStep = potentialStep; // Обновляем следующую позицию, если она допустима
-                    break; // Если нашли допустимую позицию, выходим из цикла
+                    nextStep = potentialStep; 
+                    break; 
                 }
             }
 
-            return nextStep; // Возвращаем следующую допустимую позицию
+            return nextStep; 
         }
 
     }

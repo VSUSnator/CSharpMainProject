@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using Model;
 using UnityEngine;
@@ -7,18 +7,18 @@ using Utilities;
 
 namespace UnitBrains.Pathfinding
 {
-    public class Node
+    public class Nodes
     {
         public int X { get; }
         public int Y { get; }
-        public int Cost { get; private set; } = 10; // Стоимость перемещения
+        public int Cost { get; private set; } = 10; 
         public int Estimate { get; private set; }
-        public int Value => Cost + Estimate; // Общая стоимость
-        public Node? Parent { get; set; } // Родительский узел
+        public int Value => Cost + Estimate; 
+        public Nodes? Parent { get; set; } 
 
-        public Node(int x, int y)
+        public Nodes(int x, int y)
         {
-            X = x; 
+            X = x;
             Y = y;
         }
 
@@ -34,10 +34,10 @@ namespace UnitBrains.Pathfinding
 
         public override bool Equals(object? obj)
         {
-            if (obj is not Node node)
+            if (obj is not Nodes nodes)
                 return false;
 
-            return X == node.X && Y == node.Y;
+            return X == nodes.X && Y == nodes.Y;
         }
         public override int GetHashCode() => (X, Y).GetHashCode();
 
