@@ -94,26 +94,24 @@ namespace UnitBrains.Pathfinding
 
         private Vector2Int CalcNextStepTowards(Vector2Int current, Vector2Int target)
         {
-            
-            Vector2Int nextStep = current;
+            Vector2Int bestStep = current;
+            float bestDistance = Vector2Int.Distance(current, target);
 
-           
-            for (int i = 0; i < dx.Length; i++)
+            foreach (var step in possibleSteps)
             {
-                int newX = current.x + dx[i];
-                int newY = current.y + dy[i];
-
-                Vector2Int potentialStep = new Vector2Int(newX, newY);
-
-               
+                Vector2Int potentialStep = current + step;
                 if (IsValid(potentialStep))
                 {
-                    nextStep = potentialStep; 
-                    break; 
+                    float distance = Vector2Int.Distance(potentialStep, target);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestStep = potentialStep;
+                    }
                 }
             }
 
-            return nextStep; 
+            return bestStep;
         }
 
     }
