@@ -73,6 +73,7 @@
     <Compile Include="Assets\Scripts\View\Gameplay3dView.cs" />
     <Compile Include="Assets\Scripts\EnterPoint.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\MainBase.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Pathfinding\ServiceLocator.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\ReadOnly\IReadOnlyMap.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\Projectiles\ProjectileType.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\UnitBrainProvider.cs" />

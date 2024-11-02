@@ -27,30 +27,25 @@ public class UnitCoordinator : MonoBehaviour
 
         // Получаем зависимости
         _runtimeModel = ServiceLocator.Get<IReadOnlyRuntimeModel>();
+        if (_runtimeModel == null)
+        {
+            Debug.LogError("Failed to get IReadOnlyRuntimeModel from ServiceLocator.");
+        }
         _timeUtil = TimeUtil.Create(); // Создаем или получаем существующий экземпляр TimeUtil
     }
 
     public Vector2Int RecommendedTarget { get; private set; }
     public Vector2Int RecommendedPosition { get; private set; }
 
-    private void UpdateRecommendations(int attackRadius, int mapHalf)
+    public void UpdateRecommendations(int attackRadius, int mapHalf)
     {
-        // Получаем врагов из IReadOnlyRuntimeModel
-        var enemyUnits = _runtimeModel.RoUnits
-            .Where(unit => unit is Unit)  // Приводим к типу Unit
-            .Cast<Unit>() // Приводим к типу Unit
-            .ToList(); // Сохраняем полные объекты, а не только позиции
+        var enemyUnits = GetEnemyUnits();
+        Vector2Int playerBasePos = GetPlayerBasePosition();
 
-        // Предполагается, что базу можно получить с помощью класса, который имеет свойство Pos
-        var playerBase = _runtimeModel.RoBases[RuntimeModel.PlayerId] as Base; // Приводим к типу Base
-        var playerBasePos = playerBase?.Pos ?? Vector2Int.zero; // Получаем позицию базы игрока
-
-        var enemiesOnOurSide = enemyUnits.Where(unit => unit.Pos.x < mapHalf).ToList();
-
-        if (enemiesOnOurSide.Count > 0)
+        if (enemyUnits.Any(unit => unit.Pos.x < mapHalf))
         {
             // Есть враги на нашей половине карты
-            RecommendedTarget = GetClosestEnemy(enemiesOnOurSide, playerBasePos);
+            RecommendedTarget = GetClosestEnemy(enemyUnits, playerBasePos);
             RecommendedPosition = playerBasePos + new Vector2Int(-1, 0); // Точка перед базой
         }
         else
@@ -61,17 +56,48 @@ public class UnitCoordinator : MonoBehaviour
         }
     }
 
+    private List<Unit> GetEnemyUnits()
+    {
+        return _runtimeModel.RoUnits
+            .OfType<Unit>() // Приводим к типу Unit
+            .ToList(); // Сохраняем полные объекты, а не только позиции
+    }
+
+    private Vector2Int GetPlayerBasePosition()
+    {
+        var playerBase = _runtimeModel.RoBases.ElementAtOrDefault(RuntimeModel.PlayerId) as MainBase;
+        if (playerBase == null)
+        {
+            Debug.LogError($"Player base not found for PlayerId: {RuntimeModel.PlayerId}");
+            return Vector2Int.zero; // Возврат значения по умолчанию
+        }
+        return playerBase.Pos; // Получаем позицию базы игрока
+    }
+
     private Vector2Int GetClosestEnemy(List<Unit> enemies, Vector2Int playerBase)
     {
-        return enemies.OrderBy(unit => Vector2Int.Distance(unit.Pos, playerBase)).FirstOrDefault()?.Pos ?? Vector2Int.zero;
+        if (!enemies.Any())
+        {
+            Debug.LogWarning("No enemies found.");
+            return Vector2Int.zero; // Возврат значения по умолчанию
+        }
+
+        return enemies
+            .OrderBy(unit => Vector2Int.Distance(unit.Pos, playerBase))
+            .FirstOrDefault()?.Pos ?? Vector2Int.zero;
     }
 
     private Vector2Int GetWeakestEnemy(List<Unit> enemies)
     {
-        // Здесь необходимо определить логику получения врага с наименьшим здоровьем
+        if (!enemies.Any())
+        {
+            Debug.LogWarning("No enemies found.");
+            return Vector2Int.zero; // Возврат значения по умолчанию
+        }
+
         return enemies
             .Where(unit => !unit.IsDead) // Убедимся, что юнит не мертв
             .OrderBy(unit => unit.Health) // Сортируем по здоровью
-            .FirstOrDefault()?.Pos ?? Vector2Int.zero; // Возвращаем позицию или ноль, если врагов нет
+            .FirstOrDefault()?.Pos ?? Vector2Int.zero;
     }
 }
