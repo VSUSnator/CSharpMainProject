@@ -34,8 +34,8 @@ namespace UnitBrains.Pathfinding
 
                 found = cell == unitPos;
             }
-
-            Debug.LogError($"Unit {unitPos} is not on the path");
+            Debug.Log($"StartPoint: {startPoint}, EndPoint: {endPoint}, UnitPos: {unitPos}, Path: {string.Join(", ", path)}");
+            Debug.Log($"Unit {unitPos} is not on the path");
             return unitPos;
         }
 

@@ -140,7 +140,7 @@ namespace UnitBrains.Player
         }
 
         void Move()
-        
+
         {
             Vector2Int nextStep = GetNextStep();
             // Логика для движения к цели
@@ -151,12 +151,12 @@ namespace UnitBrains.Player
             var projectiles = GetProjectiles();
             if (projectiles != null && projectiles.Count > 0)
             {
-                unit.ClearPendingProjectiles(); 
+                unit.ClearPendingProjectiles();
 
-                
+
                 List<BaseProjectile> newProjectiles = new List<BaseProjectile>(projectiles);
 
-                
+
                 foreach (var projectile in newProjectiles)
                 {
                     // Добавляем по одному
@@ -171,10 +171,10 @@ namespace UnitBrains.Player
 
         private bool CanAttack()
         {
-                return !(_overheated || !HasTargetsInRange());
+            return !(_overheated || !HasTargetsInRange());
         }
 
-        
+
 
         private int GetTemperature()
         {

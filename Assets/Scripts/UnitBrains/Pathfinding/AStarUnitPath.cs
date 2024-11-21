@@ -1,175 +1,137 @@
-using System.Collections.Generic;
 using Model;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnitBrains.Pathfinding;
+using Unity.VisualScripting.Antlr3.Runtime.Collections;
 using UnityEngine;
-using Utilities;
+
 #nullable enable
 
 namespace UnitBrains.Pathfinding
 {
     public class AStarUnitPath : BaseUnitPath
     {
-        public int X { get; }
-        public int Y { get; }
-        public int Cost { get; set; } = 10; // Стоимость перемещения на один узел
-        public int Estimate { get; set; } // Эвристическая оценка расстояния до цели
-        public int Value => Cost + Estimate; // Общая стоимость
-        public AStarUnitPath Parent { get; set; } // Родительский узел
-        private const int MaxLength = 100;
+        private int[] dx = { -1, 0, 1, 0 };
+        private int[] dy = { 0, 1, 0, -1 };
+        private const int MoveCost = 10;
+
+        private int MaxLength
+        {
+            get
+            {
+                if (runtimeModel == null)
+                {
+                    Debug.LogWarning("RuntimeModel is not initialized!");
+                    return 0; // Или любое значение по умолчанию
+                }
+
+                if (runtimeModel.RoMap == null)
+                {
+                    Debug.LogWarning("RoMap is not initialized!");
+                    return 0; // Или любое значение по умолчанию
+                }
+
+                return runtimeModel.RoMap.Width * runtimeModel.RoMap.Height;
+            }
+        }
 
         public AStarUnitPath(int x, int y, IReadOnlyRuntimeModel runtimeModel, Vector2Int startPoint, Vector2Int endPoint)
-                    : base(runtimeModel, startPoint, endPoint)
+            : base(runtimeModel, startPoint, endPoint)
         {
-            X = x;
-            Y = y;
         }
-
-        public override bool Equals(object? obj)
-        {
-            return obj is AStarUnitPath node && X == node.X && Y == node.Y;
-        }
-
-        public override int GetHashCode() => (X, Y).GetHashCode(); // Уникальный хэш-код для узла
-
-
 
         protected override void Calculate()
         {
             var currentPoint = startPoint;
             var result = new List<Vector2Int> { startPoint };
-            var visited = new HashSet<Vector2Int> { startPoint }; // Для отслеживания посещённых точек
+            var visited = new HashSet<Vector2Int> { startPoint };
             var counter = 0;
 
             while (currentPoint != endPoint && counter++ < MaxLength)
             {
-                Node currentNode = new Node(currentPoint.x, currentPoint.y);
+                var currentNode = new Nodes(currentPoint.x, currentPoint.y);
                 currentNode.CalculateEstimate(endPoint.x, endPoint.y);
-                currentNode.CalculateValue();
+                currentNode.SetCost(10);
 
-                // Используем метод для получения следующего шага
                 var nextPoint = CalcNextStepTowards(currentPoint, endPoint);
-
-                // Проверяем, если шаг уже посещён или не проходим
-                if (visited.Contains(nextPoint))
-                {
-                    break; // Если следующая точка уже в пути, выходим из цикла
-                }
 
                 if (!visited.Contains(nextPoint) && runtimeModel.IsTileWalkable(nextPoint))
                 {
                     result.Add(nextPoint);
-                    visited.Add(nextPoint); // Добавляем в посещённые
-                    currentPoint = nextPoint; // Обновляем текущую точку
+                    visited.Add(nextPoint);
+                    currentPoint = nextPoint;
                 }
                 else
                 {
-                    // Если прямая линия не проходима, пробуем другие варианты
-                    Vector2Int partStep0 = currentPoint + new Vector2Int(nextPoint.x - currentPoint.x, 0);
-
-                    if (!visited.Contains(partStep0) && runtimeModel.IsTileWalkable(partStep0))
+                    if (!TryStep(currentPoint, visited, result))
                     {
-                        result.Add(partStep0);
-                        visited.Add(partStep0);
-                        currentPoint = partStep0;
-                        continue; // Переход к следующей итерации цикла
+                        //Debug.LogWarning($"No available steps from {currentPoint}. Stopping calculation.");
+                        break;
                     }
-
-                    Vector2Int partStep1 = currentPoint + new Vector2Int(0, nextPoint.y - currentPoint.y);
-                    if (!visited.Contains(partStep1) && runtimeModel.IsTileWalkable(partStep1))
-                    {
-                        result.Add(partStep1);
-                        visited.Add(partStep1);
-                        currentPoint = partStep1;
-                        continue; // Переход к следующей итерации цикла
-                    }
-                    break; // Если ни один шаг не сработал, выходим из цикла
                 }
             }
 
             path = result.ToArray();
-            Debug.Log($"Calculating path from {startPoint} to {endPoint}");
+           // Debug.LogWarning($"Calculating path from {startPoint} to {endPoint}");
         }
-        private bool IsUnitAtPosition(Vector2Int unitPos)
+
+        private static readonly Vector2Int[] possibleSteps = {
+             new Vector2Int(1, 0),
+             new Vector2Int(-1, 0),
+             new Vector2Int(0, 1),
+             new Vector2Int(0, -1)
+        };
+
+        private bool TryStep(Vector2Int currentPoint, HashSet<Vector2Int> visited, List<Vector2Int> result)
         {
-            foreach (var cell in GetPath())
+            foreach (var step in possibleSteps)
             {
-                if (cell == unitPos)
+                Vector2Int newStep = new Vector2Int(currentPoint.x + step.x, currentPoint.y + step.y);
+                if (!visited.Contains(newStep) && runtimeModel.IsTileWalkable(newStep))
                 {
-                    return true; // Юнит находится на позиции
+                    result.Add(newStep);
+                    visited.Add(newStep);
+                    return true;
                 }
             }
-            return false; // Юнит не на позиции
+
+            return false;
+        }
+
+        private bool IsValid(Vector2Int cell)
+        {
+            bool isValidX = cell.x >= 0 && cell.x < runtimeModel.RoMap.Width;
+            bool isValidY = cell.y >= 0 && cell.y < runtimeModel.RoMap.Height;
+
+            return isValidX && isValidY && runtimeModel.IsTileWalkable(cell);
         }
 
         private Vector2Int CalcNextStepTowards(Vector2Int current, Vector2Int target)
         {
-            // Определяем следующий шаг, основываясь на целевой точке
-            int nextX = current.x + (current.x < target.x ? 1 : (current.x > target.x ? -1 : 0));
-            int nextY = current.y + (current.y < target.y ? 1 : (current.y > target.y ? -1 : 0));
+            Vector2Int bestStep = current;
+            float bestDistance = Vector2Int.Distance(current, target);
 
-            var nextStep = new Vector2Int(nextX, nextY);
-
-            // Проверяем, что следующая позиция проходима
-            if (runtimeModel.IsTileWalkable(nextStep))
-                return nextStep;
-
-
-            // Если прямая линия не проходима, пробуем другие варианты
-            if (Mathf.Abs(nextX - current.x) > 1 || Mathf.Abs(nextY - current.y) > 1)
+            foreach (var step in possibleSteps)
             {
-                var partStep0 = current + new Vector2Int(nextX - current.x, 0);
-                if (runtimeModel.IsTileWalkable(partStep0))
-                    return partStep0;
-
-                var partStep1 = current + new Vector2Int(0, nextY - current.y);
-                if (runtimeModel.IsTileWalkable(partStep1))
-                    return partStep1;
-            }
-            // Если ни один шаг не сработал, возвращаем текущее положение
-            return current; // Возвращаем текущее положение, если ни один шаг не был проходим
-        }
-
-
-        public List<AStarUnitPath> GetNeighbours(IReadOnlyRuntimeModel runtimeModel)
-        {
-            var neighbours = new List<AStarUnitPath>();
-            var directions = new Vector2Int[]
-            {
-                new Vector2Int(1, 0), // Вправо
-                new Vector2Int(-1, 0), // Влево
-                new Vector2Int(0, 1), // Вверх
-                new Vector2Int(0, -1) // Вниз
-            };
-
-            foreach (var dir in directions)
-            {
-                int newX = X + dir.x;
-                int newY = Y + dir.y;
-
-                // Проверка на проходимость
-                if (runtimeModel.IsTileWalkable(new Vector2Int(newX, newY)))
+                Vector2Int potentialStep = current + step;
+                if (IsValid(potentialStep))
                 {
-                    neighbours.Add(new AStarUnitPath(newX, newY, runtimeModel, new Vector2Int(newX, newY), new Vector2Int(newX, newY)));
+                    float distance = Vector2Int.Distance(potentialStep, target);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestStep = potentialStep;
+                    }
                 }
             }
-            return neighbours;
+
+            return bestStep;
         }
-
-
-
-        private List<AStarUnitPath> ReconstructPath(AStarUnitPath currentNode)
+        public void ExecutePathfinding()
         {
-            // Восстанавливаем путь, начиная с целевого узла
-            List<AStarUnitPath> path = new List<AStarUnitPath>();
-
-            while (currentNode != null)
-            {
-                path.Add(currentNode);
-                currentNode = currentNode.Parent;
-            }
-            path.Reverse();
-            return path;
-            // Разворачиваем путь, чтобы получить его в правильном порядке
-            // Сохраните путь или выполните необходимые действия с ним
+            Calculate(); // Вызов внутреннего метода
+            Debug.Log("Pathfinding executed.");
         }
     }
 }
