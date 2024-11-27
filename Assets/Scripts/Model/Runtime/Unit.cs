@@ -22,6 +22,7 @@ namespace Model.Runtime
         private readonly List<BaseProjectile> _pendingProjectiles = new();
         private IReadOnlyRuntimeModel _runtimeModel;
         private BaseUnitBrain _brain;
+        private UnitCoordinator _unitCoordinator; // Поле для координатора
 
         private float _nextBrainUpdateTime = 0f;
         private float _nextMoveTime = 0f;
@@ -35,6 +36,12 @@ namespace Model.Runtime
             _brain = UnitBrainProvider.GetBrain(config);
             _brain.SetUnit(this);
             _runtimeModel = ServiceLocator.Get<IReadOnlyRuntimeModel>();
+        }
+
+        // Новый метод инициализации для установки координатора
+        public void Initialize(UnitCoordinator unitCoordinator)
+        {
+            _unitCoordinator = unitCoordinator;
         }
 
         public void Update(float deltaTime, float time)

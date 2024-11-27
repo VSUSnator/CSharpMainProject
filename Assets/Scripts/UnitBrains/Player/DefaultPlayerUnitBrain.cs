@@ -14,14 +14,20 @@ namespace UnitBrains.Player
     {
         private UnitCoordinator unitCoordinator;
 
-        private void Start()
+        // Метод для инициализации с экземпляром UnitCoordinator
+        public void Initialize(UnitCoordinator coordinator)
         {
-            unitCoordinator = UnitCoordinator.Instance; // Получаем экземпляр синглтона
+            unitCoordinator = coordinator;
 
             if (unitCoordinator == null)
             {
                 Debug.LogError("UnitCoordinator instance is null. Make sure it is initialized.");
             }
+        }
+
+        private void Start()
+        {
+            // Здесь можно оставить пустым, или добавить другую логику, если необходимо
         }
 
         protected float DistanceToOwnBase(Vector2Int fromPos) =>

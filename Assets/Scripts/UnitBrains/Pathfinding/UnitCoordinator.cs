@@ -10,28 +10,14 @@ using View;
 
 public class UnitCoordinator : MonoBehaviour
 {
-    public static UnitCoordinator Instance { get; private set; }
-
     private IReadOnlyRuntimeModel _runtimeModel;
     private TimeUtil _timeUtil;
 
-    private void Awake()
+    // Конструктор
+    public UnitCoordinator(IReadOnlyRuntimeModel runtimeModel, TimeUtil timeUtil)
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        // Получаем зависимости
-        _runtimeModel = ServiceLocator.Get<IReadOnlyRuntimeModel>();
-        if (_runtimeModel == null)
-        {
-            Debug.LogError("Failed to get IReadOnlyRuntimeModel from ServiceLocator.");
-        }
-        _timeUtil = TimeUtil.Create(); // Создаем или получаем существующий экземпляр TimeUtil
+        _runtimeModel = runtimeModel ?? throw new System.ArgumentNullException(nameof(runtimeModel), "Failed to get IReadOnlyRuntimeModel from ServiceLocator.");
+        _timeUtil = timeUtil ?? TimeUtil.Create(); // Создаем или получаем существующий экземпляр TimeUtil
     }
 
     public Vector2Int RecommendedTarget { get; private set; }
@@ -84,7 +70,7 @@ public class UnitCoordinator : MonoBehaviour
 
         return enemies
             .OrderBy(unit => Vector2Int.Distance(unit.Pos, playerBase))
-            .FirstOrDefault()?.Pos ?? Vector2Int.zero;
+            .FirstOrDefault()?.Pos ?? Vector2Int.zero; // Здесь unit.Pos - это Vector2, преобразуем его в Vector2Int
     }
 
     private Vector2Int GetWeakestEnemy(List<Unit> enemies)
@@ -98,6 +84,6 @@ public class UnitCoordinator : MonoBehaviour
         return enemies
             .Where(unit => !unit.IsDead) // Убедимся, что юнит не мертв
             .OrderBy(unit => unit.Health) // Сортируем по здоровью
-            .FirstOrDefault()?.Pos ?? Vector2Int.zero;
+             .FirstOrDefault()?.Pos ?? Vector2Int.zero;
     }
 }

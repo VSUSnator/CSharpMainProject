@@ -19,6 +19,10 @@ namespace Controller
         private readonly Settings _settings;
         private readonly TimeUtil _timeUtil;
 
+        // Добавим поля для координаторов
+        private UnitCoordinator _playerUnitCoordinator;
+        private UnitCoordinator _botUnitCoordinator;
+
         public LevelController(RuntimeModel runtimeModel, RootController rootController)
         {
             _runtimeModel = runtimeModel;
@@ -48,6 +52,21 @@ namespace Controller
             _runtimeModel.Bases[RuntimeModel.PlayerId] = new MainBase(_settings.MainBaseMaxHp);
             _runtimeModel.Bases[RuntimeModel.BotPlayerId] = new MainBase(_settings.MainBaseMaxHp);
 
+            // Создаем экземпляры координаторов
+            _playerUnitCoordinator = new UnitCoordinator(_runtimeModel, _timeUtil);
+            _botUnitCoordinator = new UnitCoordinator(_runtimeModel, _timeUtil);
+
+            // Передаем координаторы юнитам
+            foreach (var unit in _runtimeModel.PlayersUnits[RuntimeModel.PlayerId])
+            {
+                unit.Initialize(_playerUnitCoordinator);
+            }
+
+            foreach (var unit in _runtimeModel.PlayersUnits[RuntimeModel.BotPlayerId])
+            {
+                unit.Initialize(_botUnitCoordinator);
+            }
+
             _gameplayView.Reinitialize();
         }
 
@@ -75,6 +94,16 @@ namespace Controller
             var unit = new Unit(config, pos);
             _runtimeModel.Money[forPlayer] -= config.Cost;
             _runtimeModel.PlayersUnits[forPlayer].Add(unit);
+
+            // Инициализируем юнит с соответствующим координатором
+            if (forPlayer == RuntimeModel.PlayerId)
+            {
+                unit.Initialize(_playerUnitCoordinator);
+            }
+            else if (forPlayer == RuntimeModel.BotPlayerId)
+            {
+                unit.Initialize(_botUnitCoordinator);
+            }
         }
 
         private void TryStartSimulation()
