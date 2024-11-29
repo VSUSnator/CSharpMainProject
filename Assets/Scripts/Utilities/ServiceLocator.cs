@@ -36,5 +36,11 @@ namespace Utilities
         {
             _services.Clear();
         }
+
+        public static void Initialize()
+        {
+            Register(new BuffSystem());
+        }
+
     }
 }

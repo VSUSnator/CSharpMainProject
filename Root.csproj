@@ -59,6 +59,7 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.12f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\Buff.cs" />
     <Compile Include="Assets\Scripts\View\TileView.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\Projectiles\BaseProjectile.cs" />
     <Compile Include="Assets\Scripts\View\UnitView.cs" />
@@ -68,6 +69,8 @@
     <Compile Include="Assets\Scripts\View\ChooseUnitView.cs" />
     <Compile Include="Assets\Scripts\View\UnitCardView.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Pathfinding\UnitCoordinator.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\IBuffable.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\BuffManager.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Player\DefaultPlayerUnitBrain.cs" />
     <Compile Include="Assets\Scripts\View\LevelFinishedView.cs" />
     <Compile Include="Assets\Scripts\View\Gameplay3dView.cs" />
@@ -94,6 +97,7 @@
     <Compile Include="Assets\Scripts\View\ProjectileView.cs" />
     <Compile Include="Assets\Scripts\View\StartMenuView.cs" />
     <Compile Include="Assets\Scripts\Model\RuntimeModel.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\BuffDebuff.cs" />
     <Compile Include="Assets\Scripts\View\HealthBar.cs" />
     <Compile Include="Assets\Scripts\View\VFXView.cs" />
     <Compile Include="Assets\Scripts\Controller\IPlayerUnitChoosingListener.cs" />
@@ -101,6 +105,7 @@
     <Compile Include="Assets\Scripts\Utilities\ServiceLocator.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\Projectiles\ArchToTileProjectile.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Pathfinding\DummyUnitPath.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\BuffSystem.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Pathfinding\Locator.cs" />
     <Compile Include="Assets\Scripts\Controller\RootController.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\Unit.cs" />

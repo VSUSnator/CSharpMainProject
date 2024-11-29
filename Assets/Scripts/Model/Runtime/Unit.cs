@@ -10,7 +10,7 @@ using Utilities;
 
 namespace Model.Runtime
 {
-    public class Unit : IReadOnlyUnit
+    public class Unit : IReadOnlyUnit, IBuffable
     {
         public UnitConfig Config { get; }
         public Vector2Int Pos { get; private set; }
@@ -27,7 +27,12 @@ namespace Model.Runtime
         private float _nextBrainUpdateTime = 0f;
         private float _nextMoveTime = 0f;
         private float _nextAttackTime = 0f;
-        
+
+        private float _nextBuffDebuffTime = 0f; // Время для следующего применения баффа/дебаффа
+        private float _buffDebuffInterval = 3f; // Интервал применения (например, каждые 3 секунды)
+        private List<BuffDebuff> _availableBuffsAndDebuffs; // Список доступных баффов и дебаффов
+        private List<BuffDebuff> _activeBuffsAndDebuffs = new List<BuffDebuff>(); // Список активных баффов и дебаффов
+
         public Unit(UnitConfig config, Vector2Int startPos)
         {
             Config = config;
@@ -36,6 +41,15 @@ namespace Model.Runtime
             _brain = UnitBrainProvider.GetBrain(config);
             _brain.SetUnit(this);
             _runtimeModel = ServiceLocator.Get<IReadOnlyRuntimeModel>();
+
+            // Инициализация доступных баффов и дебаффов
+            _availableBuffsAndDebuffs = new List<BuffDebuff>
+            {
+                new SpeedBuff(5f, 1.5f),
+                new AttackSpeedBuff(5f, 1.5f),
+                new SpeedDebuff(5f, 0.5f),
+                new AttackSpeedDebuff(5f, 0.5f)
+            };
         }
 
         // Новый метод инициализации для установки координатора
@@ -48,23 +62,60 @@ namespace Model.Runtime
         {
             if (IsDead)
                 return;
-            
+
+            // Обновляем все активные баффы и дебаффы
+            for (int i = _activeBuffsAndDebuffs.Count - 1; i >= 0; i--)
+            {
+                var buffOrDebuff = _activeBuffsAndDebuffs[i];
+                buffOrDebuff.Update(deltaTime); // Обновляем время
+
+                if (buffOrDebuff.IsExpired())
+                {
+                    buffOrDebuff.Remove(this);
+                    Debug.Log($"{Config.Name} removed {buffOrDebuff.Name} due to expiration.");
+                    _activeBuffsAndDebuffs.RemoveAt(i); // Удаляем из списка активных эффектов
+                }
+            }
+
+            // Логика применения баффов и дебаффов
+            if (_nextBuffDebuffTime < time)
+            {
+                _nextBuffDebuffTime = time + _buffDebuffInterval;
+                ApplyRandomBuffOrDebuff();
+            }
+
+            // Остальная логика обновления
             if (_nextBrainUpdateTime < time)
             {
                 _nextBrainUpdateTime = time + Config.BrainUpdateInterval;
                 _brain.Update(deltaTime, time);
             }
-            
+
             if (_nextMoveTime < time)
             {
                 _nextMoveTime = time + Config.MoveDelay;
                 Move();
             }
-            
+
             if (_nextAttackTime < time && Attack())
             {
                 _nextAttackTime = time + Config.AttackDelay;
             }
+        }
+
+        // Метод для применения случайного баффа или дебаффа
+        private void ApplyRandomBuffOrDebuff()
+        {
+            if (_availableBuffsAndDebuffs.Count == 0)
+                return;
+
+            // Выбор случайного баффа или дебаффа
+            int randomIndex = Random.Range(0, _availableBuffsAndDebuffs.Count);
+            var selectedBuffOrDebuff = _availableBuffsAndDebuffs[randomIndex];
+
+            selectedBuffOrDebuff.Apply(this);
+            Debug.Log($"{Config.Name} applied {selectedBuffOrDebuff.Name}");
+            _activeBuffsAndDebuffs.Add(selectedBuffOrDebuff); // Добавляем в активные
         }
 
         private bool Attack()
@@ -72,7 +123,7 @@ namespace Model.Runtime
             var projectiles = _brain.GetProjectiles();
             if (projectiles == null || projectiles.Count == 0)
                 return false;
-            
+
             _pendingProjectiles.AddRange(projectiles);
             return true;
         }
@@ -92,7 +143,7 @@ namespace Model.Runtime
             {
                 return;
             }
-            
+
             Pos = targetPos;
         }
 
@@ -104,6 +155,31 @@ namespace Model.Runtime
         public void TakeDamage(int projectileDamage)
         {
             Health -= projectileDamage;
+        }
+
+        // Реализация методов интерфейса IBuffable
+        public void ApplyBuff(BuffDebuff buff)
+        {
+            // Логика применения баффа
+            Debug.Log($"Applying Buff: {buff.Name}");
+        }
+
+        public void RemoveBuff(BuffDebuff buff)
+        {
+            // Логика удаления баффа
+            Debug.Log($"Removing Buff: {buff.Name}");
+        }
+
+        public void ApplyDebuff(BuffDebuff debuff)
+        {
+            // Логика применения дебаффа
+            Debug.Log($"Applying Debuff: {debuff.Name}");
+        }
+
+        public void RemoveDebuff(BuffDebuff debuff)
+        {
+            // Логика удаления дебаффа
+            Debug.Log($"Removing Debuff: {debuff.Name}");
         }
     }
 }
