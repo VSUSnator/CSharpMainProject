@@ -89,6 +89,7 @@
     <Compile Include="Assets\Scripts\UnitBrains\Player\SecondUnitBrain.cs" />
     <Compile Include="Assets\Scripts\Model\PersistedModel.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\ReadOnly\IReadOnlyBase.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Player\Wololo.cs" />
     <Compile Include="Assets\Scripts\Utilities\TimeUtil.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Player\ThirdUnitBrain.cs" />
     <Compile Include="Assets\Scripts\Controller\LevelController.cs" />
