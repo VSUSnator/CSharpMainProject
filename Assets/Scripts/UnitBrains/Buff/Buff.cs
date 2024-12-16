@@ -5,7 +5,7 @@ public class SpeedBuff : BuffDebuff
 
     public override void Apply(IBuffable character)
     {
-        character.ApplyBuff(this);
+        character.ApplyBuff(this); // Здесь 'this' является экземпляром SpeedBuff
     }
 
     public override void Remove(IBuffable character)

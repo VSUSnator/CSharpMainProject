@@ -4,6 +4,7 @@ public abstract class BuffDebuff
 {
     public string Name { get; private set; }
     public float Duration { get; private set; }
+    public float AttackModifier { get; private set; }
     public float SpeedModifier { get; private set; }
     private float _elapsedTime;
 

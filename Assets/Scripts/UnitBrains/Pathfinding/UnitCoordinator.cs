@@ -20,6 +20,14 @@ public class UnitCoordinator : MonoBehaviour
         _timeUtil = timeUtil ?? TimeUtil.Create(); // Создаем или получаем существующий экземпляр TimeUtil
     }
 
+    public List<Unit> GetUnitsInRadius(Vector2Int position, float radius)
+    {
+        return _runtimeModel.RoUnits
+            .OfType<Unit>() // Приводим к типу Unit
+            .Where(unit => Vector2Int.Distance(unit.Pos, position) <= radius && !unit.IsDead)
+            .ToList();
+    }
+
     public Vector2Int RecommendedTarget { get; private set; }
     public Vector2Int RecommendedPosition { get; private set; }
 

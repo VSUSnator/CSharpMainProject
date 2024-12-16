@@ -1,107 +1,118 @@
 using System.Collections.Generic;
 using System.Linq;
-using Model;
-using Model.Runtime.Projectiles;
+using Model.Config;
+using Model.Runtime;
+using UnitBrains;
+using UnitBrains.Pathfinding;
 using UnityEngine;
 using Utilities;
+using View;
 
 namespace UnitBrains.Player
 {
     public class FourUnitBrain : DefaultPlayerUnitBrain
     {
-        public static int IdBilling = 0;
-        public int Id;
+        private static int IdBilling = 0;
+        public int Id { get; private set; }
 
         public override string TargetUnitName => "Wololo";
 
-        private const int MaxTarget = 3;
-        private Vector2Int _notRangeEnemyPosition;
-        private List<Vector2Int> allTargetEnemies = new List<Vector2Int>();
+        private const int MaxTargetCount = 3;
+        private Vector2Int _targetPosition;
+        private float _buffRadius = 3f;
+        private float _nextBuffTime;
+        private float _buffCooldown = 5f;
+        private float _stopDuration = 0.5f;
+        private float _buffStartTime;
+        private bool _isBuffing;
 
         public FourUnitBrain()
         {
             Id = IdBilling++;
         }
 
-        private BuffSystem _buffSystem;
-
-        public FourUnitBrain(BuffSystem buffSystem)
-        {
-            Id = IdBilling++;
-            _buffSystem = buffSystem; // Получаем ссылку на систему баффов
-        }
-
-
         protected override List<Vector2Int> SelectTargets()
         {
-            allTargetEnemies.Clear();
-            allTargetEnemies = GetAllTargets().ToList();
+            var allTargetEnemies = GetAllTargets().ToList();
 
-            Vector2Int targetBaseEnemy = runtimeModel.RoMap.Bases[RuntimeModel.BotPlayerId];
-            allTargetEnemies.Remove(targetBaseEnemy);
-
-            // Если нужно оставить только одну цель
-            if (allTargetEnemies.Count > 0)
+            if (allTargetEnemies.Count == 0)
             {
-                SortByDistanceToOwnBase(allTargetEnemies);
-
-                if (allTargetEnemies.Count > MaxTarget)
-                {
-                    allTargetEnemies = allTargetEnemies.GetRange(0, MaxTarget);
-                }
-
-                int idEnemy = (Id - 1) % allTargetEnemies.Count;
-                Vector2Int target = allTargetEnemies[idEnemy];
-                allTargetEnemies.Clear();
-
-                if (!HasTargetsInRange())
-                {
-                    _notRangeEnemyPosition = target;
-                }
-                else
-                {
-                    allTargetEnemies.Add(target);
-                }
+                _targetPosition = Vector2Int.zero;
+                return allTargetEnemies;
             }
-            else
-            {
-                allTargetEnemies.Clear();
 
-                if (!HasTargetsInRange())
-                {
-                    _notRangeEnemyPosition = targetBaseEnemy;
-                }
-                else
-                {
-                    allTargetEnemies.Add(targetBaseEnemy);
-                }
-            }
+            SortByDistanceToOwnBase(allTargetEnemies);
+
+            allTargetEnemies = allTargetEnemies.Take(MaxTargetCount).ToList();
+            _targetPosition = allTargetEnemies[(Id - 1) % allTargetEnemies.Count];
+
             return allTargetEnemies;
         }
 
         public override Vector2Int GetNextStep()
         {
-            // Возвращаем следующий шаг к цели
-            return unit.Pos.CalcNextStepTowards(_notRangeEnemyPosition);
+            return unit.Pos.CalcNextStepTowards(_targetPosition);
         }
 
         public override void Update(float deltaTime, float time)
         {
-            if (CanMove())
+            // Если юнит в состоянии баффа, проверяем, истекло ли время остановки
+            if (_isBuffing)
             {
-                Move();
+                if (time >= _buffStartTime + _stopDuration)
+                {
+                    _isBuffing = false; // Завершаем состояние баффа
+                    unit.StartMoving(); // Возобновляем движение юнита после баффа
+                }
+                return; // Останавливаем выполнение, если юнит буффится
+            }
+
+            // Если пришло время для применения баффов
+            if (time >= _nextBuffTime)
+            {
+                _nextBuffTime = time + _buffCooldown; // Устанавливаем время следующего применения
+                ApplyBuffsToAllies(); // Применяем баффы к союзникам
+                _buffStartTime = time; // Запоминаем время начала баффа
+                _isBuffing = true; // Устанавливаем состояние баффа
+
+                // Останавливаем движение текущего юнита
+                unit.StopMoving(); // Остановка движения только для юнита, который применяет бафф
+                return; // Выход из метода
+            }
+
+            // Логика для выбора следующего шага, если юнит не в состоянии баффа
+            var allTargets = GetAllTargets();
+
+            // Движение к цели, если юнит не в состоянии баффа
+            if (!_isBuffing)
+            {
+                unit.Move(GetNextStep()); // Теперь мы вызываем Move с целевой позицией
             }
         }
 
-        private void Move()
+        private void ApplyBuffsToAllies()
         {
-            Vector2Int nextStep = GetNextStep();
-            // Логика для движения к цели
+            var vfxView = ServiceLocator.Get<VFXView>();
+
+            foreach (var ally in GetAllAlliesInRadius(_buffRadius))
+            {
+                // Проверяем, есть ли у союзника уже активные баффы
+                if (ally.GetActiveBuffs().All(b => b.GetType() != typeof(SpeedBuff)))
+                {
+                    ally.ApplyBuff(new SpeedBuff(5f, 1.5f)); // Применяем бафф
+
+                    vfxView.PlayVFX(ally.Pos, VFXView.VFXType.BuffApplied); // Воспроизводим VFX
+                }
+            }
         }
 
-        private bool CanMove()
+        private List<Unit> GetAllAlliesInRadius(float radius)
         {
-            return HasTargetsInRange();
+            var unitCoordinator = ServiceLocator.Get<UnitCoordinator>();
+            return unitCoordinator
+                .GetUnitsInRadius(unit.Pos, radius)
+                .Where(u => u != unit && !u.IsDead)
+                .ToList();
         }
     }
 }

@@ -7,6 +7,7 @@ using UnitBrains;
 using UnitBrains.Pathfinding;
 using UnityEngine;
 using Utilities;
+using View;
 
 namespace Model.Runtime
 {
@@ -20,18 +21,22 @@ namespace Model.Runtime
         public IReadOnlyList<BaseProjectile> PendingProjectiles => _pendingProjectiles;
 
         private readonly List<BaseProjectile> _pendingProjectiles = new();
-        private IReadOnlyRuntimeModel _runtimeModel;
-        private BaseUnitBrain _brain;
-        private UnitCoordinator _unitCoordinator; // Поле для координатора
+        private readonly IReadOnlyRuntimeModel _runtimeModel;
+        private readonly BaseUnitBrain _brain;
+        private UnitCoordinator _unitCoordinator;
 
-        private float _nextBrainUpdateTime = 0f;
-        private float _nextMoveTime = 0f;
-        private float _nextAttackTime = 0f;
+        private float _nextBrainUpdateTime;
+        private float _nextMoveTime;
+        private float _nextAttackTime;
 
-        private float _nextBuffDebuffTime = 0f; // Время для следующего применения баффа/дебаффа
-        private float _buffDebuffInterval = 3f; // Интервал применения (например, каждые 3 секунды)
-        private List<BuffDebuff> _availableBuffsAndDebuffs; // Список доступных баффов и дебаффов
-        private List<BuffDebuff> _activeBuffsAndDebuffs = new List<BuffDebuff>(); // Список активных баффов и дебаффов
+        private HashSet<BuffDebuff> _activeBuffsAndDebuffs = new(); // Используйте HashSet для уникальности
+        private readonly List<BuffDebuff> _availableBuffsAndDebuffs;
+
+        private float _nextBuffApplicationTime;
+        private const float BuffApplicationInterval = 5f;
+        private const float AttackRadius = 2f;
+
+        private bool _isMoving; // Флаг, указывающий, движется ли юнит
 
         public Unit(UnitConfig config, Vector2Int startPos)
         {
@@ -42,7 +47,6 @@ namespace Model.Runtime
             _brain.SetUnit(this);
             _runtimeModel = ServiceLocator.Get<IReadOnlyRuntimeModel>();
 
-            // Инициализация доступных баффов и дебаффов
             _availableBuffsAndDebuffs = new List<BuffDebuff>
             {
                 new SpeedBuff(5f, 1.5f),
@@ -52,7 +56,6 @@ namespace Model.Runtime
             };
         }
 
-        // Новый метод инициализации для установки координатора
         public void Initialize(UnitCoordinator unitCoordinator)
         {
             _unitCoordinator = unitCoordinator;
@@ -60,77 +63,77 @@ namespace Model.Runtime
 
         public void Update(float deltaTime, float time)
         {
-            if (IsDead)
-                return;
+            if (IsDead) return;
 
-            // Обновляем все активные баффы и дебаффы
-            for (int i = _activeBuffsAndDebuffs.Count - 1; i >= 0; i--)
-            {
-                var buffOrDebuff = _activeBuffsAndDebuffs[i];
-                buffOrDebuff.Update(deltaTime); // Обновляем время
+            UpdateActiveBuffsAndDebuffs(deltaTime);
 
-                if (buffOrDebuff.IsExpired())
-                {
-                    buffOrDebuff.Remove(this);
-                    Debug.Log($"{Config.Name} removed {buffOrDebuff.Name} due to expiration.");
-                    _activeBuffsAndDebuffs.RemoveAt(i); // Удаляем из списка активных эффектов
-                }
-            }
-
-            // Логика применения баффов и дебаффов
-            if (_nextBuffDebuffTime < time)
-            {
-                _nextBuffDebuffTime = time + _buffDebuffInterval;
-                ApplyRandomBuffOrDebuff();
-            }
-
-            // Остальная логика обновления
             if (_nextBrainUpdateTime < time)
             {
                 _nextBrainUpdateTime = time + Config.BrainUpdateInterval;
                 _brain.Update(deltaTime, time);
             }
 
-            if (_nextMoveTime < time)
+            // Получаем следующую позицию для движения
+            var targetPosition = _brain.GetNextStep();
+
+            if (_nextMoveTime < time && !_isMoving) // Движение только если юнит не остановлен
             {
                 _nextMoveTime = time + Config.MoveDelay;
-                Move();
+                Move(targetPosition); // Передаем целевую позицию
             }
 
             if (_nextAttackTime < time && Attack())
             {
                 _nextAttackTime = time + Config.AttackDelay;
             }
+
+            ApplyBuffToAlliesInRange(time);
         }
 
-        // Метод для применения случайного баффа или дебаффа
-        private void ApplyRandomBuffOrDebuff()
+        private void UpdateActiveBuffsAndDebuffs(float deltaTime)
         {
-            if (_availableBuffsAndDebuffs.Count == 0)
-                return;
+            foreach (var buffOrDebuff in _activeBuffsAndDebuffs.ToList()) // Используем ToList для безопасной модификации
+            {
+                buffOrDebuff.Update(deltaTime);
+                if (buffOrDebuff.IsExpired())
+                {
+                    RemoveBuff(buffOrDebuff);
+                }
+            }
+        }
 
-            // Выбор случайного баффа или дебаффа
-            int randomIndex = Random.Range(0, _availableBuffsAndDebuffs.Count);
-            var selectedBuffOrDebuff = _availableBuffsAndDebuffs[randomIndex];
+        private void ApplyBuffToAlliesInRange(float time)
+        {
+            if (_nextBuffApplicationTime < time)
+            {
+                _nextBuffApplicationTime = time + BuffApplicationInterval;
 
-            selectedBuffOrDebuff.Apply(this);
-            Debug.Log($"{Config.Name} applied {selectedBuffOrDebuff.Name}");
-            _activeBuffsAndDebuffs.Add(selectedBuffOrDebuff); // Добавляем в активные
+                foreach (var ally in _unitCoordinator.GetUnitsInRadius(Pos, AttackRadius)
+                    .Where(u => u != this && !u.IsDead)) // Исключаем себя и мёртвых союзников
+                {
+                    var buffToApply = _availableBuffsAndDebuffs.FirstOrDefault();
+                    if (buffToApply != null)
+                    {
+                        ally.ApplyBuff(buffToApply);
+                    }
+                }
+            }
         }
 
         private bool Attack()
         {
             var projectiles = _brain.GetProjectiles();
-            if (projectiles == null || projectiles.Count == 0)
-                return false;
+            if (projectiles == null || projectiles.Count == 0) return false;
 
-            _pendingProjectiles.AddRange(projectiles);
+            foreach (var projectile in projectiles)
+            {
+                _pendingProjectiles.Add(projectile);
+            }
             return true;
         }
 
-        private void Move()
+        public void Move(Vector2Int targetPos)
         {
-            var targetPos = _brain.GetNextStep();
             var delta = targetPos - Pos;
             if (delta.sqrMagnitude > 2)
             {
@@ -138,13 +141,25 @@ namespace Model.Runtime
                 return;
             }
 
-            if (_runtimeModel.RoMap[targetPos] ||
-                _runtimeModel.RoUnits.Any(u => u.Pos == targetPos))
+            if (!_runtimeModel.RoMap[targetPos] && !_runtimeModel.RoUnits.Any(u => u.Pos == targetPos))
             {
-                return;
+                Pos = targetPos;
             }
+        }
 
-            Pos = targetPos;
+        public void StopMoving()
+        {
+            _isMoving = false; // Остановка движения
+        }
+
+        public void StartMoving()
+        {
+            _isMoving = true; // Начало движения
+        }
+
+        public bool IsMoving()
+        {
+            return _isMoving; // Возвращаем состояние движения
         }
 
         public void ClearPendingProjectiles()
@@ -157,29 +172,53 @@ namespace Model.Runtime
             Health -= projectileDamage;
         }
 
-        // Реализация методов интерфейса IBuffable
         public void ApplyBuff(BuffDebuff buff)
         {
-            // Логика применения баффа
-            Debug.Log($"Applying Buff: {buff.Name}");
-        }
-
-        public void RemoveBuff(BuffDebuff buff)
-        {
-            // Логика удаления баффа
-            Debug.Log($"Removing Buff: {buff.Name}");
+            if (_activeBuffsAndDebuffs.Add(buff)) // Проверка и добавление в HashSet
+            {
+                Debug.Log($"Applying Buff: {buff.Name}");
+                buff.Apply(this);
+            }
+            else
+            {
+                Debug.Log($"{Config.Name} already has a buff of type {buff.GetType().Name}");
+            }
         }
 
         public void ApplyDebuff(BuffDebuff debuff)
         {
-            // Логика применения дебаффа
-            Debug.Log($"Applying Debuff: {debuff.Name}");
+            if (_activeBuffsAndDebuffs.Add(debuff)) // Проверка и добавление в HashSet
+            {
+                Debug.Log($"Applying Debuff: {debuff.Name}");
+                debuff.Apply(this);
+            }
+            else
+            {
+                Debug.Log($"{Config.Name} already has a debuff of type {debuff.GetType().Name}");
+            }
+        }
+
+        public void RemoveBuff(BuffDebuff buff)
+        {
+            if (_activeBuffsAndDebuffs.Remove(buff))
+            {
+                Debug.Log($"Removing Buff: {buff.Name}");
+                buff.Remove(this);
+            }
         }
 
         public void RemoveDebuff(BuffDebuff debuff)
         {
-            // Логика удаления дебаффа
-            Debug.Log($"Removing Debuff: {debuff.Name}");
+            if (_activeBuffsAndDebuffs.Remove(debuff))
+            {
+                Debug.Log($"Removing Debuff: {debuff.Name}");
+                debuff.Remove(this);
+            }
+        }
+
+        public IReadOnlyCollection<BuffDebuff> GetActiveBuffs() // Возвращаем коллекцию
+        {
+            return _activeBuffsAndDebuffs.ToList(); // Можно вернуть как список, если нужно
         }
     }
 }
