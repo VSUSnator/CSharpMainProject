@@ -1,55 +1,53 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class BuffManager
+public class BuffManager<T> where T : IBuffable<T>
 {
-    private Dictionary<IBuffable, List<BuffDebuff>> _activeBuffs = new Dictionary<IBuffable, List<BuffDebuff>>();
+    private Dictionary<T, List<ActiveBuff<T>>> activeBuffs = new Dictionary<T, List<ActiveBuff<T>>>();
 
-    public void AddBuff(BuffDebuff buff, IBuffable character)
+    public void ApplyBuff(T character, BuffDebuff<T> buff)
     {
-        if (!_activeBuffs.ContainsKey(character))
+        if (buff.CanApply(character))
         {
-            _activeBuffs[character] = new List<BuffDebuff>();
+            if (!activeBuffs.ContainsKey(character))
+            {
+                activeBuffs[character] = new List<ActiveBuff<T>>();
+            }
+            buff.Apply(character);
+            activeBuffs[character].Add(new ActiveBuff<T>(buff));
         }
 
-        if (!_activeBuffs[character].Any(b => b.Name == buff.Name))
-        {
-            _activeBuffs[character].Add(buff);
-            buff.Apply(character); // Используем метод абстрактного класса
-        }
     }
 
-    public void RemoveBuff(BuffDebuff buff, IBuffable character)
+    public void UpdateActiveBuffs(float deltaTime)
     {
-        if (_activeBuffs.TryGetValue(character, out List<BuffDebuff> buffs))
+        foreach (var characterBuffs in activeBuffs)
         {
-            if (buffs.Remove(buff))
+            for (int i = characterBuffs.Value.Count - 1; i >= 0; i--)
             {
-                buff.Remove(character); // Используем метод абстрактного класса
-            }
+                var buff = characterBuffs.Value[i];
+                buff.RemainingDuration -= deltaTime;
 
-            if (buffs.Count == 0)
-            {
-                _activeBuffs.Remove(character);
-            }
-        }
-    }
-
-    public void Update(float deltaTime)
-    {
-        foreach (var unit in new List<IBuffable>(_activeBuffs.Keys))
-        {
-            for (int i = _activeBuffs[unit].Count - 1; i >= 0; i--)
-            {
-                var buff = _activeBuffs[unit][i];
-                buff.Update(deltaTime);
-
-                if (buff.IsExpired())
+                if (buff.RemainingDuration <= 0)
                 {
-                    RemoveBuff(buff, unit);
+                    buff.Buff.Remove(characterBuffs.Key);
+                    characterBuffs.Value.RemoveAt(i);
                 }
             }
         }
+    }
+
+}
+public class ActiveBuff<T> where T : IBuffable<T>
+{
+    public BuffDebuff<T> Buff { get; private set; }
+    public float RemainingDuration { get; set; }
+
+    public ActiveBuff(BuffDebuff<T> buff)
+    {
+        Buff = buff;
+        RemainingDuration = buff.Duration;
     }
 }

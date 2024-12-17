@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Model;
 using Model.Runtime.Projectiles;
@@ -6,7 +7,8 @@ using Model.Runtime.ReadOnly;
 using UnitBrains.Pathfinding;
 using UnityEngine;
 using Utilities;
-using Unit = Model.Runtime.Unit;
+
+using Model.Runtime;
 
 namespace UnitBrains
 {

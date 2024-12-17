@@ -1,7 +1,6 @@
 using Model;
 using UnitBrains.Pathfinding;
 using System.Collections.Generic;
-using System.Linq;
 using Model.Config;
 using Model.Runtime.Projectiles;
 using Model.Runtime.ReadOnly;
@@ -11,44 +10,40 @@ using Utilities;
 
 public class BuffSystem : MonoBehaviour
 {
-    private BuffManager buffManager;
-    private List<BuffDebuff> availableBuffs = new List<BuffDebuff>();
+    private BuffManager<SomeCharacter> buffManager;
+    private List<BuffDebuff<SomeCharacter>> availableBuffs = new List<BuffDebuff<SomeCharacter>>();
+    public SomeCharacter someCharacter; // Assign in inspector
 
     private void Awake()
     {
-        buffManager = new BuffManager();
-        ServiceLocator.Register(buffManager); // Регистрация BuffManager
-
-        // Регистрация доступных баффов
+        buffManager = new BuffManager<SomeCharacter>();
         RegisterBuffs();
-    }
-
-    private void OnDestroy()
-    {
-        ServiceLocator.Unregister<BuffManager>(); // Удаление BuffManager при уничтожении
     }
 
     private void RegisterBuffs()
     {
-        availableBuffs.Add(new SpeedBuff(5f, 1.5f)); // Добавляем бафф скорости
-        availableBuffs.Add(new AttackSpeedBuff(5f, 1.5f)); // Добавляем бафф скорости атаки
-        availableBuffs.Add(new SpeedDebuff(5f, 0.5f)); // Добавляем дебафф скорости
-        availableBuffs.Add(new AttackSpeedDebuff(5f, 0.5f)); // Добавляем дебафф скорости атаки
-    }
-
-    public List<BuffDebuff> GetAvailableBuffs()
-    {
-        return availableBuffs;
-    }
-
-    public BuffManager GetBuffManager()
-    {
-        return buffManager; // Метод для получения BuffManager
+        availableBuffs.Add(new DoubleShotBuff(5f)); // Добавляем двойной выстрел
+        availableBuffs.Add(new IncreasedShootingRadiusBuff(5f, 2.0f)); // Увеличение радиуса стрельбы
     }
 
     private void Update()
     {
-        // Обновляем состояние баффов
-        buffManager.Update(Time.deltaTime);
+        buffManager.UpdateActiveBuffs(Time.deltaTime); // Убедитесь, что вызываете этот метод
+    }
+
+    public void ApplyBuff(BuffDebuff<SomeCharacter> buff)
+    {
+        buffManager.ApplyBuff(someCharacter, buff);
+    }
+
+    [ContextMenu("Apply Double Shot Buff")]
+    private void ApplyDoubleShotBuff()
+    {
+        ApplyBuff(availableBuffs.Find(x => x is DoubleShotBuff));
+    }
+    [ContextMenu("Apply Increased Radius Buff")]
+    private void ApplyIncreasedRadiusBuff()
+    {
+        ApplyBuff(availableBuffs.Find(x => x is IncreasedShootingRadiusBuff));
     }
 }

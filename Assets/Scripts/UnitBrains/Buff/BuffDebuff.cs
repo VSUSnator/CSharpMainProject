@@ -1,31 +1,16 @@
 using UnityEngine;
-
-public abstract class BuffDebuff
+public abstract class BuffDebuff<T> where T : IBuffable<T>
 {
-    public string Name { get; private set; }
-    public float Duration { get; private set; }
-    public float AttackModifier { get; private set; }
-    public float SpeedModifier { get; private set; }
-    private float _elapsedTime;
+    public string Name { get; }
+    public float Duration { get; }
 
-    protected BuffDebuff(string name, float duration, float speedModifier)
+    public BuffDebuff(string name, float duration)
     {
         Name = name;
         Duration = duration;
-        SpeedModifier = speedModifier;
-        _elapsedTime = 0f;
     }
 
-    public void Update(float deltaTime)
-    {
-        _elapsedTime += deltaTime;
-    }
-
-    public bool IsExpired()
-    {
-        return _elapsedTime >= Duration;
-    }
-
-    public abstract void Apply(IBuffable character);
-    public abstract void Remove(IBuffable character);
+    public abstract void Apply(T character);
+    public abstract void Remove(T character);
+    public abstract bool CanApply(T character);
 }

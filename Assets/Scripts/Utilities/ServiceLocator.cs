@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Utilities;
+using View;
 
 namespace Utilities
 {
@@ -36,11 +38,16 @@ namespace Utilities
         {
             _services.Clear();
         }
+    }
+}
+public class GameInitializer
+{
+    public void Initialize()
+    {
+        // Создаем экземпляр VFXView
+        VFXView vfxView = new VFXView();
 
-        public static void Initialize()
-        {
-            Register(new BuffSystem());
-        }
-
+        // Регистрируем VFXView в ServiceLocator
+        ServiceLocator.Register<VFXView>(vfxView);
     }
 }

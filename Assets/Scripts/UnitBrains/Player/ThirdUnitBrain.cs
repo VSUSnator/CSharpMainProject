@@ -167,14 +167,10 @@ namespace UnitBrains.Player
                 StartTransition(); // Начать переход в движение
             }
         }
-
-
         private bool CanAttack()
         {
             return !(_overheated || !HasTargetsInRange());
         }
-
-
 
         private int GetTemperature()
         {

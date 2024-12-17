@@ -71,7 +71,7 @@ namespace UnitBrains.Player
             if (time >= _nextBuffTime)
             {
                 _nextBuffTime = time + _buffCooldown; // Устанавливаем время следующего применения
-                ApplyBuffsToAllies(); // Применяем баффы к союзникам
+                //ApplyBuffsToAllies(); // Применяем баффы к союзникам
                 _buffStartTime = time; // Запоминаем время начала баффа
                 _isBuffing = true; // Устанавливаем состояние баффа
 
@@ -90,21 +90,56 @@ namespace UnitBrains.Player
             }
         }
 
-        private void ApplyBuffsToAllies()
-        {
-            var vfxView = ServiceLocator.Get<VFXView>();
+        //private void ApplyBuffsToAllies()
+        //{
+        //    var vfxView = ServiceLocator.Get<VFXView>();
+        //    if (vfxView == null)
+        //    {
+        //        Debug.LogError("VFXView не зарегистрирован в ServiceLocator!");
+        //        return;
+        //    }
 
-            foreach (var ally in GetAllAlliesInRadius(_buffRadius))
-            {
-                // Проверяем, есть ли у союзника уже активные баффы
-                if (ally.GetActiveBuffs().All(b => b.GetType() != typeof(SpeedBuff)))
-                {
-                    ally.ApplyBuff(new SpeedBuff(5f, 1.5f)); // Применяем бафф
+        //    foreach (var ally in GetAllAlliesInRadius(_buffRadius))
+        //    {
+        //        // Убедитесь, что ally - это тип Unit
+        //        if (ally is Unit unitAlly) // Приводим ally к типу Unit
+        //        {
+        //            bool buffApplied = false;
 
-                    vfxView.PlayVFX(ally.Pos, VFXView.VFXType.BuffApplied); // Воспроизводим VFX
-                }
-            }
-        }
+        //            // Применяем двойной выстрел
+        //            if (unitAlly.GetActiveBuffs().All(b => b.GetType() != typeof(DoubleShotBuff)))
+        //            {
+        //                unitAlly.ApplyBuff(new DoubleShotBuff(5f)); // Применяем бафф двойного выстрела
+        //                vfxView.PlayVFX(unitAlly.Pos, VFXView.VFXType.BuffApplied); // Воспроизводим VFX
+        //                Debug.Log($"Бафф двойного выстрела применён к юниту на позиции {unitAlly.Pos}.");
+        //                buffApplied = true;
+        //            }
+        //            else
+        //            {
+        //                Debug.Log($"Юнит на позиции {unitAlly.Pos} уже имеет бафф двойного выстрела.");
+        //            }
+
+        //            // Применяем увеличение радиуса атаки
+        //            if (unitAlly.GetActiveBuffs().All(b => b.GetType() != typeof(IncreasedShootingRadiusBuff)))
+        //            {
+        //                unitAlly.ApplyBuff(new IncreasedShootingRadiusBuff(5f, 2.0f)); // Применяем бафф увеличения радиуса
+        //                vfxView.PlayVFX(unitAlly.Pos, VFXView.VFXType.BuffApplied); // Воспроизводим VFX
+        //                Debug.Log($"Бафф увеличения радиуса атаки применён к юниту на позиции {unitAlly.Pos}.");
+        //                buffApplied = true;
+        //            }
+        //            else
+        //            {
+        //                Debug.Log($"Юнит на позиции {unitAlly.Pos} уже имеет бафф увеличения радиуса атаки.");
+        //            }
+
+        //            // Если ни один из баффов не был применен
+        //            if (!buffApplied)
+        //            {
+        //                Debug.Log($"Юнит на позиции {unitAlly.Pos} не получил ни одного баффа.");
+        //            }
+        //        }
+        //    }
+        //}
 
         private List<Unit> GetAllAlliesInRadius(float radius)
         {

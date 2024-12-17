@@ -1,65 +1,92 @@
-public class SpeedBuff : BuffDebuff
-{
-    public SpeedBuff(float duration, float speedModifier)
-        : base("Speed Buff", duration, speedModifier) { }
+//public class SpeedBuff<T> : BuffDebuff<T> where T : IBuffable<T>
+//{
+//    public SpeedBuff(float duration, float speedModifier)
+//        : base("Speed Buff", duration, speedModifier, 0) { }
 
-    public override void Apply(IBuffable character)
-    {
-        character.ApplyBuff(this); // Здесь 'this' является экземпляром SpeedBuff
-    }
+//    public override void Apply(T character)
+//    {
+//        character.ApplyBuff(this); // Применяем бафф
+//    }
 
-    public override void Remove(IBuffable character)
-    {
-        character.RemoveBuff(this);
-    }
-}
+//    public override void Remove(T character)
+//    {
+//        character.RemoveBuff(this); // Удаляем бафф
+//    }
 
-public class SpeedDebuff : BuffDebuff
-{
-    public SpeedDebuff(float duration, float speedModifier)
-        : base("Speed Debuff", duration, speedModifier) { }
+//    public override bool CanApply(T character)
+//    {
+//        // Здесь вы можете добавить логику проверки
+//        // Например, проверка на наличие другого баффа или состояние юнита
+//        return true; // Для примера, возвращаем true
+//    }
+//}
 
-    public override void Apply(IBuffable character)
-    {
-        character.ApplyDebuff(this);
-    }
+//public class AttackSpeedBuff<T> : BuffDebuff<T> where T : IBuffable<T>
+//{
+//    public AttackSpeedBuff(float duration, float attackSpeedModifier)
+//        : base("Attack Speed Buff", duration, 0, attackSpeedModifier) { }
 
-    public override void Remove(IBuffable character)
-    {
-        character.RemoveDebuff(this);
-    }
-}
+//    public override void Apply(T character)
+//    {
+//        character.ApplyBuff(this);
+//    }
 
-public class AttackSpeedDebuff : BuffDebuff
-{
-    public AttackSpeedDebuff(float duration, float attackSpeedModifier)
-        : base("Attack Speed Debuff", duration, attackSpeedModifier) { }
+//    public override void Remove(T character)
+//    {
+//        character.RemoveBuff(this);
+//    }
 
-    public override void Apply(IBuffable character)
-    {
-        character.ApplyDebuff(this);
-    }
+//    public override bool CanApply(T character)
+//    {
+//        // Здесь вы можете добавить логику проверки
+//        // Например, проверка на наличие другого баффа или состояние юнита
+//        return true; // Для примера, возвращаем true
+//    }
+//}
 
-    public override void Remove(IBuffable character)
-    {
-        character.RemoveDebuff(this);
-    }
-}
+//// Аналогично для дебаффов
+//public class SpeedDebuff<T> : BuffDebuff<T> where T : IBuffable<T>
+//{
+//    public SpeedDebuff(float duration, float speedModifier)
+//        : base("Speed Debuff", duration, speedModifier, 0) { }
 
-public class AttackSpeedBuff : BuffDebuff
-{
-    public AttackSpeedBuff(float duration, float attackSpeedModifier)
-        : base("Attack Speed Buff", duration, attackSpeedModifier) { }
+//    public override void Apply(T character)
+//    {
+//        character.ApplyDebuff(this);
+//    }
 
-    public override void Apply(IBuffable character)
-    {
-        character.ApplyBuff(this);
-    }
+//    public override void Remove(T character)
+//    {
+//        character.RemoveDebuff(this);
+//    }
 
-    public override void Remove(IBuffable character)
-    {
-        character.RemoveBuff(this);
-    }
-}
+//    public override bool CanApply(T character)
+//    {
+//        // Здесь вы можете добавить логику проверки
+//        // Например, проверка на наличие другого баффа или состояние юнита
+//        return true; // Для примера, возвращаем true
+//    }
+//}
 
+//public class AttackSpeedDebuff<T> : BuffDebuff<T> where T : IBuffable<T>
+//{
+//    public AttackSpeedDebuff(float duration, float attackSpeedModifier)
+//        : base("Attack Speed Debuff", duration, 0, attackSpeedModifier) { }
 
+//    public override void Apply(T character)
+//    {
+//        character.ApplyDebuff(this);
+//    }
+
+//    public override void Remove(T character)
+//    {
+//        character.RemoveDebuff(this);
+//    }
+
+//    public override bool CanApply(T character)
+//    {
+//        // Здесь вы можете добавить логику проверки
+//        // Например, проверка на наличие другого баффа или состояние юнита
+//        return true; // Для примера, возвращаем true
+//    }
+//}

@@ -59,6 +59,8 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.12f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\DoubleShotBuff.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\NewBehaviourScript.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Buff\Buff.cs" />
     <Compile Include="Assets\Scripts\View\TileView.cs" />
     <Compile Include="Assets\Scripts\Model\Runtime\Projectiles\BaseProjectile.cs" />
@@ -116,6 +118,7 @@
     <Compile Include="Assets\Scripts\Utilities\MapGenerator.cs" />
     <Compile Include="Assets\Scripts\Controller\BotController.cs" />
     <Compile Include="Assets\Scripts\Controller\SimulationController.cs" />
+    <Compile Include="Assets\Scripts\UnitBrains\Buff\BuffableCharacter.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Pathfinding\AStarUnitPath.cs" />
     <Compile Include="Assets\Scripts\UnitBrains\Pathfinding\Node.cs" />
   </ItemGroup>
